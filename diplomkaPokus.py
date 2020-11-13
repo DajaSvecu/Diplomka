@@ -99,15 +99,15 @@ cp_w = PropsSI('CPMASS', 'T', t_w_str, 'P', p_w, 'Water')
 # -----------------------TRUBKOVY PROSTOR-----------------------
 # Geometricky navrh ZVOLENO 
 # trubky Stehlik 123
-d_in = 0.015 #[m] minimalne 12 mm kvuli zanaseni, maximalne 30 kvuli kompaktnosti PARAMETR
-tl = 0.002 #[m] 1,5-5 mm  PARAMETR
+d_in = 0.01 #[m] minimalne 12 mm kvuli zanaseni, maximalne 30 kvuli kompaktnosti PARAMETR
+tl = 0.001 #[m] 1,5-5 mm  PARAMETR cim vic tim vetsi tlakova ztrata, ostatni zmeny male
 d_out = d_in + 2*tl #[m]
 
 # plast Stehlik 123
 D1 = 0.2 #[m] vnitrni prumer TAB
-DS = 0.186 # [m] prumer trubkoveho svazku TAB
-t_p = 1*D1 #[m] vzdalenost mezi prepazkami ZVOLENO PARAMETR
-t_t = 1.5*d_in #[m] roztec trubek 1,25-1,5 * d_in ZVOLENO PARAMETR
+DS = round(D1*0.94,3) # [m] prumer trubkoveho svazku TAB
+t_p = 1.5*D1 #[m] vzdalenost mezi prepazkami ZVOLENO PARAMETR
+t_t = 1.5*d_in #[m] roztec trubek 1,25-1,33-1,5 * d_in ZVOLENO PARAMETR alespon 6mm
 # stehlik 56
 t_t1 = t_t #[m] pricna roztec trubek TAB
 t_t2 = 0.866*t_t #[m] podelna roztec trubek TAB
@@ -116,7 +116,7 @@ s_p = 0.004 #[m] tloustka prepazek TAB
 
 # pocet trubek Stehlik 57,58,71
 n_tr = round((math.pi * (DS-d_out)**2)/(4*t_t**2*0.866)) # 0.866 = 30 stupnu, 1 = 45,60,90 stupnu
-h_p = 0.5*DS # 50-75% * DS zakryty prostor prepazkou PARAMETR
+h_p = 0.75*DS # 50-75% * DS zakryty prostor prepazkou PARAMETR
 fi_vs_a = 2 * math.acos((2/DS-d_out) * (h_p-D1/2)) # 71
 n_tr_v = round((DS - d_out)**2/(8*t_t**2*0.866)*(fi_vs_a - math.sin(fi_vs_a))) # 58 
 
@@ -166,8 +166,9 @@ lamb_ocel = 50 #ZVOLENO
 k = math.pi/(1/(alpha_sp * d_in) + 1/(2*lamb_ocel)*math.log(d_in/d_out) + 1/(alpha_w * d_out)) # prostup tepla
 delta_t_ln = ((t_sp_in-t_w_out)-(t_sp_out-t_w_in))/math.log((t_sp_in-t_w_out)/(t_sp_out-t_w_in)) # teplotni dif
 Qv = Q_sp*1.05 #ZVOLENO
-l_max = Qv/(k*n_tr*delta_t_ln) # delka vymeniku minimalne 3*D1
-n_p = l_max/t_p -1 # pocet prepazek
+l_max = round(Qv/(k*n_tr*delta_t_ln),3) # delka vymeniku minimalne 3*D1
+Qv_1 = l_max*k*n_tr*delta_t_ln
+n_p = round(l_max/t_p -1) # pocet prepazek
 
 # TLAKOVE ZTRATY trubkovy prostor 66-67
 # Prepazkovy prostor trenim
@@ -213,6 +214,7 @@ delta_p_w = delta_p_to + delta_p_tn + delta_p_tv
 Dulezite = {
     'roztec': t_t,
     'Qv': Qv,
+    'Qv_1': Qv_1,
     'deltaPw': delta_p_w,
     'deltaPsp': delta_p,
     'D1':D1,
