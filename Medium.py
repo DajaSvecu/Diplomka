@@ -74,10 +74,10 @@ class MultiMedium(Medium):
         Metoda slouzi k dopocitani dalsich fyzikalnich vlastnosti medii
          """
         self.M = self.molar()
-        self.rho = self.prop('DMASS')
-        self.cp = self.prop('CPMASS')
-        self.eta = self.prop('VISCOSITY')
-        self.lamb = self.prop('CONDUCTIVITY')
+        self.rho = self.propDMASS()
+        self.cp = self.propCPMASS()
+        self.eta = self.propViscosity()
+        self.lamb = self.propConductivity()
         self.deltaH = self.propH()
 
     def molar(self):
@@ -88,34 +88,47 @@ class MultiMedium(Medium):
         for i in self.medium:
             M.append(PropsSI('MOLARMASS', 'T', self.t_str, 'P', self.p, i[0]))
         return M
-    def prop(self, name):
+    def propDMASS(self):
         """ 
-        Metoda slouzi ke spocitani dane fyzikalni vlastnosti
-        ----------
-        PARAMETERS
-        ----------
-        name : str
-            Nazev fyzikalni vlastnosti
+        Metoda slouzi k vypoctu hustoty media
+         """
+        a = 0
+        for i in self.medium:
+            a += i[1] * PropsSI('DMASS', 'T', self.t_str, 'P', self.p, i[0])
+        return a
+
+    def propCPMASS(self):
+        """ 
+        Metoda slouzi k vypoctu tepelne kapacity media
          """
         a = 0
         b = 0
-        if name == 'DMASS':
-            for i in self.medium:
-                a += i[1] * PropsSI('DMASS', 'T', self.t_str, 'P', self.p, i[0])
-            b = 1 
-        elif name == 'CPMASS':
-            for i in range(len(self.medium)):
-                a += self.medium[i][1] * self.M[i] * PropsSI('CPMASS', 'T', self.t_str, 'P', self.p, self.medium[i][0])
-                b += self.medium[i][1] * self.M[i]
-        elif name == 'VISCOSITY':
-            for i in range(len(self.medium)):
-                a += self.medium[i][1] * self.M[i]**0.5 * PropsSI('VISCOSITY', 'T', self.t_str, 'P', self.p, self.medium[i][0]) 
-                b += self.medium[i][1] * self.M[i] **0.5
-        elif name == 'CONDUCTIVITY':
-            for i in range(len(self.medium)):
+        for i in range(len(self.medium)):
+            a += self.medium[i][1] * self.M[i] * PropsSI('CPMASS', 'T', self.t_str, 'P', self.p, self.medium[i][0])
+            b += self.medium[i][1] * self.M[i]
+        return a/b
+
+    def propViscosity(self):
+        """ 
+        Metoda slouzi k vypoctu viskozity media
+         """
+        a = 0
+        b = 0
+        for i in range(len(self.medium)):
+            a += self.medium[i][1] * self.M[i]**0.5 * PropsSI('VISCOSITY', 'T', self.t_str, 'P', self.p, self.medium[i][0]) 
+            b += self.medium[i][1] * self.M[i] **0.5
+        return a/b       
+
+    def propConductivity(self):
+        """ 
+        Metoda slouzi k vypoctu tepelne vodivosti media
+         """
+        a = 0
+        b = 0
+        for i in range(len(self.medium)):
                 a += self.medium[i][1] / self.M[i]**0.5 * PropsSI('CONDUCTIVITY', 'T', self.t_str, 'P', self.p, self.medium[i][0]) 
                 b += self.medium[i][1] / self.M[i] **0.5
-        return a/b
+        return a/b 
     def propH(self):
         """ 
         Metoda slouzi k vypoctu rozdilu entaplii na zaklade teploty pro jednotliva media
@@ -130,3 +143,13 @@ class MultiMedium(Medium):
             a += self.medium[i][1] * self.M[i] * difference
             b += self.medium[i][1] * self.M[i]
         return abs(a/b)  
+x = slozky = [
+    ['O2', 0.07],
+    ['CO2', 0.12],
+    ['N2', 0.7],
+    ['Ar', 0.006],
+    ['H2O', 0.1]
+]
+
+latka1 = MultiMedium(1163.15,333.9563289239378,10**5,x)
+print(latka1.lamb)
