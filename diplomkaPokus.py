@@ -1,13 +1,12 @@
-import CoolProp
 import math
-from elements import Element
 from CoolProp.CoolProp import PropsSI
+from elements import Element
 m_sp = 150/3600 # [kg/s]
 t_sp_in = 890 +273.15 # [Kelvin]
 p_sp = 10**5 # [Pascal]
 lamb_ocel = 50 #ZVOLENO
 # procentualni zastoupeni prvku ve spalinach
-# poradi [O2, CO2, N2, Ar, H2O]
+# poradi [O2, CO2, N2, Ar, H2O]s
 x = [
     0.07,
     0.12,
@@ -15,6 +14,7 @@ x = [
     0.006,
     0.1
 ]
+
 # molarni hmotnost prvku
 # poradi [O2, CO2, N2, Ar, H2O]
 M = [
@@ -32,7 +32,6 @@ t_w_in = 25 + 273.15 # [Celsius]
 t_w_out = 30 +273.15 # [Celsius]
 t_w_str = (t_w_in+t_w_out)/2
 p_w = 4*10**5 # [Pascal]
-
 
 # teplota rosneho bodu
 pp_sp_H2O = p_sp * x[4]
@@ -281,7 +280,6 @@ z_5w = 2*(2*t_p/l_tn)**(2-z_51w) # 70
 delta_p_tn = 2*lamb22*(n_rp + n_rv)* rho_w*w_zw**2* z_2w* z_3w* z_5w
 w_wv = m_w/((S_2Z* S_vz)**0.5*rho_w)
 delta_p_tv = n_p*((2+0.6*n_rv)*rho_w*w_wv**2)/2*z_4w # TODO laminarni proudeni
- 
 delta_p_w = delta_p_to + delta_p_tn + delta_p_tv
 
 Dulezite = {

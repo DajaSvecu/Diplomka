@@ -143,13 +143,3 @@ class MultiMedium(Medium):
             a += self.medium[i][1] * self.M[i] * difference
             b += self.medium[i][1] * self.M[i]
         return abs(a/b)  
-x = slozky = [
-    ['O2', 0.07],
-    ['CO2', 0.12],
-    ['N2', 0.7],
-    ['Ar', 0.006],
-    ['H2O', 0.1]
-]
-
-latka1 = MultiMedium(1163.15,333.9563289239378,10**5,x)
-print(latka1.lamb)
