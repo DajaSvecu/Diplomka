@@ -1,40 +1,16 @@
 from CoolProp.CoolProp import PropsSI
-class Medium(object):
-    """ 
-    Class Medium slouzi k uchovani informaci o mediu vstupujicim do vymeniku.
-    Ve tride jsou dale vypocitany fyzikalni vlasnosti nutne k dalsim vypoctum.
-     """
-    def __init__(self, t1, t2, p, medium):
+def props(medium:dict) -> None:
+    t_str = (medium['T1'] + medium['T2'])/2
+    medium['deltaH'] = propH(medium)
+    for name in ['Dmass', 'Cpmass', 'viscosity', 'conductivity', 'Prandtl']:
+        medium1[name] = prop(name, medium, t_str)
+def propH(medium:dict) -> float:
         """ 
-        PARAMETERS
-        ----------
-        t1 : int/float 
-            Vstupni teplota [K]
-        t2 : int/float 
-            Vystupni teplota [K]
-        p : int/float 
-            Vstupni tlak [Pa]
-        medium : str
-            Nazev media
+        Metoda slouzi ke spocitani rozdilu entalpie na zaklade teplot
          """
-        self.t1 = t1
-        self.t2 = t2
-        self.p = p
-        self.medium = medium
-        self.t_str = (t1 + t2)/2
-        self.props()
+        return abs(PropsSI('HMASS', 'T', medium['T1'], 'P', medium['P'], medium['Medium']) - PropsSI('HMASS', 'T', medium['T2'], 'P', medium['P'], medium['Medium']))
 
-    def props(self):
-        """ 
-        Metoda slouzi k dopocitani dalsich fyzikalnich vlastnosti media
-         """
-        self.deltaH = self.propH()
-        self.rho = self.prop('DMASS')
-        self.lamb = self.prop('CONDUCTIVITY')
-        self.eta = self.prop('VISCOSITY')
-        self.cp = self.prop('CPMASS')    
-
-    def prop(self, name):
+def prop(name:str, medium : dict, t : float) -> float:
         """ 
         Metoda slouzi ke spocitani dane fyzikalni vlastnosti
         ----------
@@ -43,14 +19,16 @@ class Medium(object):
         name : str
             Nazev fyzikalni vlastnosti
          """
-        return PropsSI(name, 'T', self.t_str, 'P', self.p, self.medium)
-    def propH(self):
-        """ 
-        Metoda slouzi ke spocitani rozdilu entalpie na zaklade teplot
-         """
-        return abs(PropsSI('HMASS', 'T', self.t1, 'P', self.p, self.medium) - PropsSI('HMASS', 'T', self.t2, 'P', self.p, self.medium))
+        return PropsSI(name, 'T', t, 'P', medium['P'], medium['Medium'])
 
-class MultiMedium(Medium):
+if __name__ == '__main__':
+    medium1 = {'M': 1, 'T1': 500, 'T2': 400, 'P': 100000.0, 'Rf': 10.0, 'Medium': 'Water'}
+    props(medium1)
+
+
+
+
+class MultiMedium():
     """ 
     Class MultiMedium slouzi k uchovani informaci o mediich vstupujicich do vymeniku.
     Ve tride jsou dale vypocitany fyzikalni vlasnosti nutne k dalsim vypoctum.
@@ -68,7 +46,11 @@ class MultiMedium(Medium):
         medium : list
             Smes medii a jejich zastoupeni
          """
-        super().__init__(t1, t2, p, medium)
+        self.t1 = t1
+        self.t2 = t2
+        self.p = p
+        self.medium = medium
+        self.t_str = (self.t2 + self.t1) / 2
     def props(self):
         """ 
         Metoda slouzi k dopocitani dalsich fyzikalnich vlastnosti medii
