@@ -101,19 +101,18 @@ rho_w = PropsSI('D', 'T', t_w_str, 'P', p_w, 'Water')
 eta_w = PropsSI('V', 'T', t_w_str, 'P', p_w, 'Water')
 lamb_w = PropsSI('L', 'T', t_w_str, 'P', p_w, 'Water')
 cp_w = PropsSI('CPMASS', 'T', t_w_str, 'P', p_w, 'Water')
-
-# -----------------------TRUBKOVY PROSTOR-----------------------
+# ---------------------------ROZMERY---------------------------
 # Geometricky navrh ZVOLENO 
 # trubky Stehlik 123
 d_in = 0.01 #[m] minimalne 12 mm kvuli zanaseni, maximalne 30 kvuli kompaktnosti PARAMETR
 tl = 0.001 #[m] 1,5-5 mm  PARAMETR cim vic tim vetsi tlakova ztrata, ostatni zmeny male
-d_out = d_in + 2*tl #[m]
 uhel = 30 # [deg]
 # plast Stehlik 123
 D1 = 0.2 #[m] vnitrni prumer TAB
-DS = 0.186 # [m] prumer trubkoveho svazku TAB
-t_p = 1.5*D1 #[m] vzdalenost mezi prepazkami ZVOLENO PARAMETR
-t_t = 1.6*d_in #[m] roztec trubek 1,25-1,33-1,5 * d_in ZVOLENO PARAMETR alespon 6mm
+DS = 0.94 * D1 # [m] prumer trubkoveho svazku TAB
+t_p = 1.5 * D1 #[m] vzdalenost mezi prepazkami ZVOLENO PARAMETR
+d_out = d_in + 2*tl #[m]
+t_t = 1.5*d_out #[m] roztec trubek 1,25-1,33-1,5 * d_in ZVOLENO PARAMETR alespon 6mm
 # stehlik 56
 if uhel == 30:
     c1 = 1
@@ -161,6 +160,7 @@ S_vn = (math.pi*D1**2)/4*(fi_vp/(2*math.pi)-math.sin(fi_vp)/(2*math.pi)) # UPRAV
 S_vz = S_vn-n_tr_v*((math.pi*d_out**2)/4)
 # rychlost v trubkach
 n_ch = 1 # pocet chodu PARAMETER
+# -----------------------TRUBKOVY PROSTOR-----------------------
 w_sp = m_sp / ((math.pi*d_in**2)/4*rho*n_tr)*n_ch #rychlost spalin CHYBI POCET CHODU 5-10
 nu_sp = eta / rho # kinematicka viskozita
 Re_sp = (w_sp*d_in)/nu_sp # Reynolds

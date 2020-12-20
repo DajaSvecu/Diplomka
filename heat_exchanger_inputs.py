@@ -1,40 +1,53 @@
-class UserInput:
+class UserInputMedium:
+    def __init__(self, name):
+        self.name = name
+        self.parameters = [
+            {"name": "M",
+                "parse_function": float,
+                "unit": "kg/s"},
+            {"name": "T1",
+                "parse_function": float,
+                "unit": "K"},
+            {"name": "T2",
+                "parse_function": float,
+                "unit": "K"},               
+            {"name": "P",
+                "parse_function": float,
+                "unit": "Pa"},               
+            {"name": "Rf",
+                "parse_function": float,
+                "unit": "K*m^2/W"},               
+            {"name": "Medium",
+                "parse_function": str,
+                "unit": "-"}
+        ]
+class UserInputRest:
     def __init__(self):
-        self.parameters_from_user = [
-            {"name": "inputQ",
-                "description": "Vykon vymeniku",
-                "variable_name": "Q",
-                "parse_function": float,
-                "unit": "W"},
-            {"name": "inputM1",
-                "description": "Prutok v trubkovem prostoru",
-                "variable_name": "m1",
-                "parse_function": float,
-                "unit": "kg/s"},
-            {"name": "inputM2",
-                "description": "Prutok v mezitrubkovem prostoru",
-                "variable_name": "m2",
-                "parse_function": float,
-                "unit": "kg/s"},
-            {"name": "inputT11",
-                "description": "Teplota na vstupu do trubkoveho prostoru",
-                "variable_name": "T11",
-                "parse_function": float,
-                "unit": "K"},
-            {"name": "inputT12",
-                "description": "Teplota na vystupu z trubkoveho prostoru",
-                "variable_name": "T12",
-                "parse_function": float,
-                "unit": "K"},
-            {"name": "inputT21",
-                "description": "Teplota na vstupu do mezitrubkoveho prostoru",
-                "variable_name": "T21",
-                "parse_function": float,
-                "unit": "K"},
-            {"name": "inputT22",
-                "description": "Teplota na vystupu z mezitrubkoveho prostoru",
-                "variable_name": "T22",
-                "parse_function": float,
-                "unit": "K"},
-               
+        self.name = 'Rest'
+        self.parameters = [
+            {
+                'name' : 'Uhel',
+                'parse_function': float,
+                'unit': 'deg'
+            },
+            {
+                'name' : 'Lambda',
+                'parse_function': float,
+                'unit': 'W/m^2K'
+            },            
+            {
+                'name' : 'MaxDelka',
+                'parse_function': float,
+                'unit': 'm'
+            },
+            {
+                'name' : 'MaxSirka',
+                'parse_function': float,
+                'unit': 'm'
+            },
+            {
+                'name' : 'MaxZtraty',
+                'parse_function': float,
+                'unit': 'Pa'
+            }
         ]

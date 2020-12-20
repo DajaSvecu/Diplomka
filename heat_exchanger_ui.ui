@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>314</width>
-    <height>353</height>
+    <width>212</width>
+    <height>693</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,9 +26,9 @@
    <widget class="QPushButton" name="buttonRun">
     <property name="geometry">
      <rect>
-      <x>120</x>
-      <y>260</y>
-      <width>75</width>
+      <x>60</x>
+      <y>600</y>
+      <width>91</width>
       <height>23</height>
      </rect>
     </property>
@@ -42,10 +42,10 @@
    <widget class="QFrame" name="frame">
     <property name="geometry">
      <rect>
-      <x>80</x>
-      <y>40</y>
-      <width>161</width>
-      <height>201</height>
+      <x>20</x>
+      <y>20</y>
+      <width>171</width>
+      <height>191</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -57,13 +57,67 @@
     <widget class="QWidget" name="verticalLayoutWidget">
      <property name="geometry">
       <rect>
-       <x>-1</x>
-       <y>-1</y>
-       <width>161</width>
-       <height>201</height>
+       <x>9</x>
+       <y>9</y>
+       <width>151</width>
+       <height>171</height>
       </rect>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayoutEntrance"/>
+     <layout class="QVBoxLayout" name="verticalLayoutTube"/>
+    </widget>
+   </widget>
+   <widget class="QFrame" name="frame_2">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>210</y>
+      <width>171</width>
+      <height>191</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QWidget" name="verticalLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>151</width>
+       <height>171</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayoutShell"/>
+    </widget>
+   </widget>
+   <widget class="QFrame" name="frame_3">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>400</y>
+      <width>171</width>
+      <height>191</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QWidget" name="verticalLayoutWidget_3">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>151</width>
+       <height>171</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayoutRest"/>
     </widget>
    </widget>
   </widget>
@@ -72,7 +126,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>314</width>
+     <width>212</width>
      <height>21</height>
     </rect>
    </property>
