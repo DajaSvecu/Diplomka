@@ -173,7 +173,22 @@ class Calculate():
         tube_delta_p = self.tube.rho * w_tube ** 2 / 2 * (0.7 + lamb_11 * z1 * z2)
 
         # TLAKOVE ZTRATY V MEZITRUBKOVEM PROSTORU
+        lambda22 = self.pressure_drop(Re_shell, heat_exchanger['t_t'], d_out)
+        w_2 = self.shell.prutok / (S_2Z * self.shell.rho)
+        z2 = 1 # zanedbavame
+        if Re_shell < 100:
+            z3 = math.exp(0-4.5*S_sS/S_2Z) 
+        else:
+            z3 = math.exp(0-3.7*S_sS/S_2Z)
+        z4 = 1 # zanedbavame
+        n_rp = (2 * h_p - D1)/t_t2
+        shell_p_o = 2 * lambda22 * n_rp * (n_p - 1) * self.shell.rho * w_2 ** 2 * z2 * z3 * z4
 
+        l_tn = 2*heat_exchanger['t_p'] - s_p
+        if Re_shell < 100:
+            z5 = 2*(2*heat_exchanger['t_p']/l_tn)**(2-1)
+        else:
+            z5 = 2*(2*heat_exchanger['t_p']/l_tn)**(2-0.2)
         
 
 
@@ -231,9 +246,71 @@ class Calculate():
                 return 0.016
             else: return 0.016
          
+    def pressure_drop(self, reynolds, t_t, d_out):
+        if self.rest['Uhel'] == 30 or self.rest['Uhel'] == 60:
+            c2 = 7
+            a2 = 0.5
+            if reynolds > 10000:
+                c1 = 0.372
+                a1 = -0.123
+            elif reynolds > 1000:
+                c1 = 0.486
+                a1 = -0.152
+            elif reynolds > 100:
+                c1 = 0.57
+                a1 = -0.476
+            elif reynolds > 10:
+                c1 = 45.1
+                a1 = -0.973
+            elif reynolds > 0:
+                c1 = 48
+                a1 = -1
+            else:
+                raise Exception('')        
+        elif self.rest['Uhel'] == 45:
+            c2 = 6.59
+            a2 = 0.52
+            if reynolds > 10000:
+                c1 = 0.303
+                a1 = -0.126
+            elif reynolds > 1000:
+                c1 = 0.333
+                a1 = -0.136
+            elif reynolds > 100:
+                c1 = 3.5
+                a1 = -0.476
+            elif reynolds > 10:
+                c1 = 26.2
+                a1 = -0.913
+            elif reynolds > 0:
+                c1 = 32
+                a1 = -1
+            else:
+                raise Exception('')       
+        elif self.rest['Uhel'] == 90:
+            c2 = 6.3
+            a2 = 0.378
+            if reynolds > 10000:
+                c1 = 0.391
+                a1 = -0.148
+            elif reynolds > 1000:
+                c1 = 0.0815
+                a1 = 0.022
+            elif reynolds > 100:
+                c1 = 6.09
+                a1 = -0.602
+            elif reynolds > 10:
+                c1 = 32.1
+                a1 = -0.963
+            elif reynolds > 0:
+                c1 = 35
+                a1 = -1
+            else:
+                raise Exception('')       
 
-
-
+        a = c2 / (1 + 0.14 * reynolds ** a2)
+        lamb22 = c1 * (1.33/(t_t/d_out))**a * reynolds ** a1
+        return lamb22
 
 if __name__ == '__main__':
     trubka = {'M': 0.1, 'T1': 623.15, 'T2': 523.15, 'P': 100000.0, 'Rf': 10.0, 'Medium': [['Water', 1]]}
