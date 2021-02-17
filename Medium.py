@@ -119,11 +119,22 @@ class Medium():
     def propPhase(self):
         phases = []
         for i in self.medium:
-            phase1 = PhaseSI('T', self.t1, 'P', self.p, i[0])
-            phase2 = PhaseSI('T', self.t2, 'P', self.p, i[0])
+            phase1 = PhaseSI('T', self.t1, 'P', self.p*i[1], i[0])
+            if phase1 == 'supercritical_gas':
+                phase1 = 'gas'
+            elif phase1 == 'supercritical_liquid':
+                phase1 = 'liquid'
+            
+            phase2 = PhaseSI('T', self.t2, 'P', self.p*i[1], i[0])
+            if phase2 == 'supercritical_gas':
+                phase2 = 'gas'
+            elif phase2 == 'supercritical_liquid':
+                phase2 = 'liquid'
+            
             if phase1 == phase2:
                 phases.append(phase1)
-            else: return 'twophase'
+            else:
+                return 'twophase'
 
         for phase in phases:
             if phase != phases[0]:

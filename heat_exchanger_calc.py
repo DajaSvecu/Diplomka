@@ -14,6 +14,9 @@ class Calculate():
     
     def calculate_all(self) -> None:
         heat_exchanger = {}
+        pocet = 0
+        pocet_exc = 0
+        pocet_ass = 0
         for shell in self.sizes.list_of_shells:
             if shell['D2'] > self.rest['MaxSirka']: continue # podminka pro maximalni sirku
             heat_exchanger['shell'] = shell
@@ -22,27 +25,28 @@ class Calculate():
                 for tl in tube['wall']:
                     heat_exchanger['tl'] = tl
                     for t_p in {0.2, 0.4, 0.6, 0.8, 1}:
-                        heat_exchanger['t_p'] = t_p
+                        heat_exchanger['t_p'] = t_p * (heat_exchanger['shell']['D2'] - 2 * heat_exchanger['shell']['wall'])
                         for t_t in {1.25, 1.33, 1.5}:
-                            heat_exchanger['t_t'] = t_t
+                            heat_exchanger['t_t'] = t_t * (heat_exchanger['d_in'] + 2 * heat_exchanger['tl'])
                             try:
                                 heat_exchanger_result = self.calculate_heat_exchanger(heat_exchanger)
                             except AssertionError:
-                                pass
+                                pocet_ass += 1
                             except Exception:
-                                pass
+                                pocet_exc += 1
                             else:
                                 print('This one work out!')
-
+                                pocet += 1
+        print(pocet_ass)
+        print(pocet_exc)
+        print(pocet)
                             
 
     def calculate_heat_exchanger(self, heat_exchanger:dict) -> dict:
         D1 = heat_exchanger['shell']['D2'] - 2 * heat_exchanger['shell']['wall']
         DS = D1 - 0.016
         d_out = heat_exchanger['d_in'] + 2 * heat_exchanger['tl']
-        heat_exchanger['t_p'] *= D1
-        heat_exchanger['t_t'] *= d_out
-        h_p = 0.75 * DS # ULOZIT PARAMETER
+        h_p = 0.75 * D1 # ULOZIT PARAMETER
         s_p = self.baffle_thickness(D1, heat_exchanger['t_p']) # ULOZIT PARAMETER
 
 
@@ -70,7 +74,7 @@ class Calculate():
         assert (self.tube.phase == 'liquid' or self.tube.phase == 'gas'), ''
         
         if self.tube.phase == 'liquid':
-            if w_tube < 0.3 or w_tube > 1:
+            if w_tube < 0.2 or w_tube > 1:
                 raise Exception('')
         elif self.tube.phase == 'gas':
             if w_tube < 10 or w_tube > 30:
@@ -117,14 +121,14 @@ class Calculate():
         Nuss_shell_turb = (0.037*Re_shell**0.8*Pr_shell)/(1+2.443*Re_shell**(-0.1)*(Pr_shell**(2/3)-1)) # 55
 
         # KOREKCNI FAKTORY
-        y2 = 1 # zanedbavame
+        y2 = 1 # TODO KONTROLA pomer prestupu tepla medii -> podle toho stena trubky
         
         if self.rest['Uhel'] == 90: #55
             y3 = 1 + 0.7/gamma**1.5*(x7/x6-0.3)/(x7/x6+0.7)**2
         else:
             y3 = 1+2/(3*x7) # 56 prevod soucinitele prestupu tepla z rady na svazek trubek 2 druhy pro 90 stupnu a pro zbytek
         
-        y4 = 1 # KONTROLA
+        y4 = 1 # TODO KONTROLA
 
         x8 = n_tr_v / n_tr # 56
 
@@ -132,7 +136,7 @@ class Calculate():
         
         y5 = 1 - x8 + 0.524 * x8**0.32 # 57 0.2 < t_p/D1 < 1; x8 < 0.8
 
-        y6 = 1 # 58 TODO zjistit dulezitost, spatne by se zjistovalo
+        y6 = 1 # 58 TODO bud 1 mm nebo zjistit a zohlednit
 
         if self.rest['Uhel'] == 30 or self.rest['Uhel'] == 90:
             S_2Z = ((D1-DS)+(heat_exchanger['t_t'] - d_out)*((DS-d_out)/t_t1))*(heat_exchanger['t_p'] - s_p) # 58-59 
@@ -143,7 +147,7 @@ class Calculate():
             y7 = math.exp(0-1.5*S_sS/S_2Z) # 59 TODO zanedbani tesnicich list?
         else:
             y7 = math.exp(0-1.35*S_sS/S_2Z) # 59 TODO zanedbani tesnicich list?
-        y8 = 1 # KONTROLA
+        y8 = 1 # TODO KONTROLA
 
         Nuss_shell = (0.3 +(Nuss_shell_lam**2 + Nuss_shell_turb**2)**0.5)*y2*y3*y4*y5*y6*y7*y8 # realny plati pri stehlik 60
         alpha_shell = Nuss_shell * self.shell.lamb / l_char
@@ -158,7 +162,7 @@ class Calculate():
         if L_max > 15 * D1 or L_max < 3 * D1 or L_max > self.rest['MaxDelka']: raise Exception('') # ERROR
         n_p = math.floor(L_max / heat_exchanger['t_p'] - 1) # Ulozit parameter
 
-        #kontrola
+        # KONTROLA
 
         # TLAKOVE ZTRATY V TRUBKOVEM PROSTORU
         if Re_tube <= 2320:
@@ -169,30 +173,58 @@ class Calculate():
             lamb_11 = 8*((8/Re_tube)**12 + 1/(x9 + x10)**1.5)**(1/12)
         
         z1 = L_max / heat_exchanger['d_in']
-        z2 = 1 # zanedbavame
+        z2 = 1 # TODO KONTROLA
         tube_delta_p = self.tube.rho * w_tube ** 2 / 2 * (0.7 + lamb_11 * z1 * z2)
 
         # TLAKOVE ZTRATY V MEZITRUBKOVEM PROSTORU
         lambda22 = self.pressure_drop(Re_shell, heat_exchanger['t_t'], d_out)
         w_2 = self.shell.prutok / (S_2Z * self.shell.rho)
-        z2 = 1 # zanedbavame
         if Re_shell < 100:
             z3 = math.exp(0-4.5*S_sS/S_2Z) 
         else:
             z3 = math.exp(0-3.7*S_sS/S_2Z)
-        z4 = 1 # zanedbavame
+        z4 = 1 # TODO KONTROLA
         n_rp = (2 * h_p - D1)/t_t2
-        shell_p_o = 2 * lambda22 * n_rp * (n_p - 1) * self.shell.rho * w_2 ** 2 * z2 * z3 * z4
+        shell_p_a = 2 * lambda22 * n_rp * (n_p - 1) * self.shell.rho * w_2 ** 2 * z2 * z3 * z4
 
         l_tn = 2*heat_exchanger['t_p'] - s_p
         if Re_shell < 100:
             z5 = 2*(2*heat_exchanger['t_p']/l_tn)**(2-1)
         else:
             z5 = 2*(2*heat_exchanger['t_p']/l_tn)**(2-0.2)
+        n_rv = 0.8/t_t2 * ((D1 + (DS - d_out))/2 - h_p)
+        shell_p_b = 2 * lambda22 * (n_rp + n_rv) * self.shell.rho * w_2 ** 2 * z2 * z3 * z5
         
+        phi_vp = 2*math.acos(2*h_p/D1 -1)
+        S_vN = math.pi* D1**2 / 4 *(phi_vp/(2*math.pi) - math.sin(phi_vp)/(2*math.pi))
+        S_vZ = S_vN - n_tr_v*math.pi*d_out**2/4
+        w_2v = self.shell.prutok / ((S_2Z * S_vZ)**0.5 * self.shell.rho)
+        if Re_shell <= 100:
+            d_hv = 4 * S_vZ/(n_tr_v*math.pi*d_out + math.pi * D1 * phi_vp/(2*math.pi))
+            shell_p_c = n_p*(2*self.shell.rho*w_2v**2/2 +26 * self.shell.prutok *self.shell.eta/((S_vZ*S_vN)**0.5)*(n_rv/(heat_exchanger['t_t']-d_out)+heat_exchanger['t_p']/d_hv**2))*z4
+        else:
+            shell_p_c = n_p *((2 + 0.6 * n_rv)*self.shell.rho*w_2v**2/2)*z4
+        shell_delta_p = shell_p_a + shell_p_b + shell_p_c
+        delta_p = tube_delta_p + shell_delta_p # ULOZIT PARAMETER
 
-
-        return 0
+        if delta_p > self.rest['MaxZtraty']:
+            raise Exception('')
+        
+        objem_vymeniku = math.pi*(n_tr*(d_out**2 - heat_exchanger['d_in']**2)+(heat_exchanger['shell']['D2']**2-D1**2))/4*L_max
+        result = {
+            'vyska_prep': round(h_p,3),
+            'tl_prep': s_p,
+            'delka':L_max,
+            'pocet_prepazek':n_p,
+            'pocet_trubek': n_tr,
+            'w_tube': round(w_tube,2),
+            'w_shell': round(w_shell,2),
+            'kompaktnost': round(A),
+            'tube_d_p': round(tube_delta_p),
+            'shell_d_p': round(shell_delta_p),
+            'objem': objem_vymeniku * self.sizes.rho
+        }
+        return result
 
         
         
@@ -313,14 +345,18 @@ class Calculate():
         return lamb22
 
 if __name__ == '__main__':
-    trubka = {'M': 0.1, 'T1': 623.15, 'T2': 523.15, 'P': 100000.0, 'Rf': 10.0, 'Medium': [['Water', 1]]}
-    plast = {'M': 0.48, 'T1': 298.15, 'T2': 308.15, 'P': 100000.0, 'Rf': 10.0, 'Medium': [['Water', 1]]}
+    trubka = {'M': 15/360, 'T1': 890 + 273.15, 'T2': 60.81 + 273.15, 'P': 100000, 'Rf': 10.0, 'Medium': [['H2O', 0.1],
+    ['O2', 0.07],
+    ['CO2', 0.12],
+    ['Ar', 0.006],
+    ['N2', 0.7]]}
+    plast = {'M': 1.926, 'T1': 25 + 273.15, 'T2': 30 + 273.15, 'P': 400000, 'Rf': 10.0, 'Medium': [['H2O', 1]]}
     ostatni = {
         'Uhel': 30.0,
-        'Lambda': 47.0,
-        'MaxDelka': 5.0,
+        'Lambda': 50.0,
+        'MaxDelka': 6.0,
         'MaxSirka': 1.2,
-        'MaxZtraty': 50000.0,
+        'MaxZtraty': 100000.0,
     }
     everything = Calculate(trubka, plast, ostatni)
     everything.calculate_all()
