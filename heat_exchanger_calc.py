@@ -4,16 +4,17 @@ import math
 
 class Calculate():
     def __init__(self, tube:dict, shell:dict, rest:dict):
-        self.tube = Medium(tube)
-        self.shell = Medium(shell)
+        self.tube = Medium(tube) # TODO error handling two_phase state
+        self.shell = Medium(shell) # TODO error handling two_phase state
         self.rest = rest
         self.sizes = Sizes()
         if self.tube.q > 0.99 * self.shell.q and self.tube.q < 1.01 * self.shell.q:
             self.rest['Q'] = 1.08 * (self.tube.q + self.shell.q) / 2
-        #else: # ERROR
+        #else: TODO error handling wrong power
     
     def calculate_all(self) -> None:
         heat_exchanger = {}
+        vysledky = []
         pocet = 0
         pocet_exc = 0
         pocet_ass = 0
@@ -25,9 +26,10 @@ class Calculate():
                 for tl in tube['wall']:
                     heat_exchanger['tl'] = tl
                     for t_p in {0.2, 0.4, 0.6, 0.8, 1}:
-                        heat_exchanger['t_p'] = t_p * (heat_exchanger['shell']['D2'] - 2 * heat_exchanger['shell']['wall'])
+                        heat_exchanger['t_p'] = round(t_p * (heat_exchanger['shell']['D2'] - 2 * heat_exchanger['shell']['wall']), 5)
+                        # TODO pridelat ruzne vysky prepazky
                         for t_t in {1.25, 1.33, 1.5}:
-                            heat_exchanger['t_t'] = t_t * (heat_exchanger['d_in'] + 2 * heat_exchanger['tl'])
+                            heat_exchanger['t_t'] = round(t_t * (heat_exchanger['d_in'] + 2 * heat_exchanger['tl']), 5)
                             try:
                                 heat_exchanger_result = self.calculate_heat_exchanger(heat_exchanger)
                             except AssertionError:
@@ -35,12 +37,27 @@ class Calculate():
                             except Exception:
                                 pocet_exc += 1
                             else:
-                                print('This one work out!')
+                                vysledky.append(heat_exchanger_result)
                                 pocet += 1
+        print('TLAKOVA ZTRATA')
+        vysledky.sort(key=lambda a: a[1]['tlak_ztraty'])
+        for i in range(10):
+            print(vysledky[i][1])
+
+        print('VAHA')
+        vysledky.sort(key=lambda a: a[1]['hmotnost'])
+        for i in range(10):
+            print(vysledky[i][1])
+        
+        print('KOMPAKTNOST')
+        vysledky.sort(reverse=True, key=lambda a: a[1]['kompaktnost'])
+        for i in range(10):
+            print(vysledky[i][1])
+
+
         print(pocet_ass)
         print(pocet_exc)
         print(pocet)
-                            
 
     def calculate_heat_exchanger(self, heat_exchanger:dict) -> dict:
         D1 = heat_exchanger['shell']['D2'] - 2 * heat_exchanger['shell']['wall']
@@ -210,7 +227,9 @@ class Calculate():
         if delta_p > self.rest['MaxZtraty']:
             raise Exception('')
         
-        objem_vymeniku = math.pi*(n_tr*(d_out**2 - heat_exchanger['d_in']**2)+(heat_exchanger['shell']['D2']**2-D1**2))/4*L_max
+        # TODO pricit k objemu prepazky
+        objem_vymeniku = math.pi*(n_tr*(d_out**2 - heat_exchanger['d_in']**2)+(heat_exchanger['shell']['D2']**2-D1**2))/4*L_max 
+
         result = {
             'vyska_prep': round(h_p,3),
             'tl_prep': s_p,
@@ -220,21 +239,10 @@ class Calculate():
             'w_tube': round(w_tube,2),
             'w_shell': round(w_shell,2),
             'kompaktnost': round(A),
-            'tube_d_p': round(tube_delta_p),
-            'shell_d_p': round(shell_delta_p),
-            'objem': objem_vymeniku * self.sizes.rho
+            'tlak_ztraty': round(delta_p),
+            'hmotnost': objem_vymeniku * self.sizes.rho
         }
-        return result
-
-        
-        
-        
-        
-        
-        
-        
-
-
+        return (dict(heat_exchanger), result)
 
     def baffle_thickness(self, shell_diameter, baffle_spacing):
         if shell_diameter < 0.377:
@@ -356,7 +364,7 @@ if __name__ == '__main__':
         'Lambda': 50.0,
         'MaxDelka': 6.0,
         'MaxSirka': 1.2,
-        'MaxZtraty': 100000.0,
+        'MaxZtraty': 50000.0,
     }
     everything = Calculate(trubka, plast, ostatni)
     everything.calculate_all()
