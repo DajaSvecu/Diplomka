@@ -16,7 +16,7 @@ class Calculate():
         heat_exchanger = {}
         vysledky = []
         pocet = 0
-        pocet_exc = 0
+        pocet_exc = [0,0,0,0]
         pocet_ass = 0
         for shell in self.sizes.list_of_shells:
             if shell['D2'] > self.rest['MaxSirka']: continue # podminka pro maximalni sirku
@@ -34,30 +34,39 @@ class Calculate():
                                 heat_exchanger_result = self.calculate_heat_exchanger(heat_exchanger)
                             except AssertionError:
                                 pocet_ass += 1
-                            except Exception:
-                                pocet_exc += 1
+                            except Exception as error:
+                                if error.args[0] == 'Tube':
+                                    pocet_exc[0] += 1
+                                elif error.args[0] == 'Shell':
+                                    pocet_exc[1] += 1
+                                elif error.args[0] == 'Length':
+                                    pocet_exc[1] += 1
+                                elif error.args[0] == 'Pressure':
+                                    pocet_exc[1] += 1
                             else:
                                 vysledky.append(heat_exchanger_result)
                                 pocet += 1
+        print(pocet_ass)
+        print(pocet_exc)
+        print(pocet)
+        for i in range(20):
+            print(vysledky[i][0])
+        '''
         print('TLAKOVA ZTRATA')
         vysledky.sort(key=lambda a: a[1]['tlak_ztraty'])
-        for i in range(10):
-            print(vysledky[i][1])
-
+        
         print('VAHA')
         vysledky.sort(key=lambda a: a[1]['hmotnost'])
         for i in range(10):
             print(vysledky[i][1])
-        
+        print(vysledky[-1])        
         print('KOMPAKTNOST')
         vysledky.sort(reverse=True, key=lambda a: a[1]['kompaktnost'])
         for i in range(10):
             print(vysledky[i][1])
 
-
-        print(pocet_ass)
-        print(pocet_exc)
-        print(pocet)
+        '''
+        return vysledky
 
     def calculate_heat_exchanger(self, heat_exchanger:dict) -> dict:
         D1 = heat_exchanger['shell']['D2'] - 2 * heat_exchanger['shell']['wall']
@@ -91,11 +100,12 @@ class Calculate():
         assert (self.tube.phase == 'liquid' or self.tube.phase == 'gas'), ''
         
         if self.tube.phase == 'liquid':
-            if w_tube < 0.2 or w_tube > 1:
-                raise Exception('')
+            if w_tube < 0.3 or w_tube > 1:
+                raise Exception('Tube')
+
         elif self.tube.phase == 'gas':
             if w_tube < 10 or w_tube > 30:
-                raise Exception('')
+                raise Exception('Tube')
         
         nu_tube = self.tube.eta / self.tube.rho
         Re_tube = w_tube * heat_exchanger['d_in'] / nu_tube
@@ -126,10 +136,10 @@ class Calculate():
                 
         if self.shell.phase == 'liquid':
             if w_shell < 0.2 or w_shell > 0.8:
-                raise Exception('')
+                raise Exception('Shell')
         elif self.shell.phase == 'gas':
             if w_shell < 5 or w_shell > 15:
-                raise Exception('')
+                raise Exception('Shell')
         
         l_char = math.pi * d_out / 2
         Re_shell = (w_shell * l_char)/(self.shell.eta / self.shell.rho)
@@ -169,14 +179,14 @@ class Calculate():
         Nuss_shell = (0.3 +(Nuss_shell_lam**2 + Nuss_shell_turb**2)**0.5)*y2*y3*y4*y5*y6*y7*y8 # realny plati pri stehlik 60
         alpha_shell = Nuss_shell * self.shell.lamb / l_char
         # ----------------------------------------------------------------
-
+        # TODO pridat zanaseni
         k = math.pi/(1/(alpha_tube * heat_exchanger['d_in']) + 1/(2*self.rest['Lambda'])*math.log(heat_exchanger['d_in']/d_out) + 1/(alpha_shell * d_out))
         if self.tube.t1 > self.tube.t2:
             delta_t_ln = ((self.tube.t1 - self.shell.t2) - (self.tube.t2 - self.shell.t1)) / math.log((self.tube.t1 - self.shell.t2) / (self.tube.t2 - self.shell.t1))
         else:
             delta_t_ln = ((self.shell.t1 - self.tube.t2) - (self.shell.t2 - self.tube.t1)) / math.log((self.shell.t1 - self.tube.t2) / (self.shell.t2 - self.tube.t1))
         L_max = round(self.rest['Q'] / (k * delta_t_ln * n_tr), 3) # ULOZIT PARAMETER
-        if L_max > 15 * D1 or L_max < 3 * D1 or L_max > self.rest['MaxDelka']: raise Exception('') # ERROR
+        if L_max > 15 * D1 or L_max < 3 * D1 or L_max > self.rest['MaxDelka']: raise Exception('Length') # ERROR
         n_p = math.floor(L_max / heat_exchanger['t_p'] - 1) # Ulozit parameter
 
         # KONTROLA
@@ -225,10 +235,11 @@ class Calculate():
         delta_p = tube_delta_p + shell_delta_p # ULOZIT PARAMETER
 
         if delta_p > self.rest['MaxZtraty']:
-            raise Exception('')
+            raise Exception('Pressure')
         
         # TODO pricit k objemu prepazky
         objem_vymeniku = math.pi*(n_tr*(d_out**2 - heat_exchanger['d_in']**2)+(heat_exchanger['shell']['D2']**2-D1**2))/4*L_max 
+        objem_vymeniku += math.pi / 4 * (D1 ** 2 * 0.75 - n_tr * d_out**2) * n_p *s_p
 
         result = {
             'vyska_prep': round(h_p,3),
@@ -240,7 +251,7 @@ class Calculate():
             'w_shell': round(w_shell,2),
             'kompaktnost': round(A),
             'tlak_ztraty': round(delta_p),
-            'hmotnost': objem_vymeniku * self.sizes.rho
+            'hmotnost': round(objem_vymeniku * self.sizes.rho, 3)
         }
         return (dict(heat_exchanger), result)
 
@@ -367,4 +378,13 @@ if __name__ == '__main__':
         'MaxZtraty': 50000.0,
     }
     everything = Calculate(trubka, plast, ostatni)
-    everything.calculate_all()
+
+    vysledky = everything.calculate_all()
+    import matplotlib.pyplot as plt
+
+    fig, axs = plt.subplots(1,3)
+    for vysledek in vysledky:
+        axs[0].scatter(vysledek[1]['kompaktnost'],vysledek[1]['tlak_ztraty'])
+        axs[1].scatter(vysledek[1]['hmotnost'],vysledek[1]['tlak_ztraty'])
+        axs[2].scatter(vysledek[1]['kompaktnost'],vysledek[1]['hmotnost'])
+    plt.show()

@@ -143,8 +143,12 @@ class Medium():
         return phases[0]
 
 if __name__ == '__main__':
-    medium1 = {'M': 0.833, 'T1': 623.15, 'T2': 423.15, 'P': 100000.0, 'Rf': 10.0, 'Medium': 'Water'}
-    multimedium_vzor = {'M': 2, 'T1': 298.15, 'T2': 348.15, 'P': 400000.0, 'Rf': 10.0, 'Medium': [['Water', 1]]}
-    props(medium1)
-    medium2 = Medium(multimedium_vzor)
-    print(medium2.phase)
+    '''
+    medium_vzor1 = {'M': 11.186/3600, 'T1': 900+273.15, 'T2': 65.81+ 273.15, 'P': 100000, 'Rf': 10.0, 'Medium': [['O2', 0.07], ['CO2', 0.12], ['Ar', 0.006], ['H2O', 0.1], ['N2', 0.7]]}
+    medium_vzor2 = {'M': 0.02894, 'T1': 288.15, 'T2': 313.15, 'P': 500000.0, 'Rf': 10.0, 'Medium': [['Water', 1]]}
+    '''
+    medium_vzor1 = {'M': 11.186/3600, 'T1': 900+273.15, 'T2': 65.81+ 273.15, 'P': 100000, 'Rf': 10.0, 'Medium': [['O2', 0.07], ['CO2', 0.12], ['Ar', 0.006], ['H2O', 0.1], ['N2', 0.7]]}
+    medium_vzor2 = {'M': 0.02894, 'T1': 288.15, 'T2': 313.15, 'P': 500000.0, 'Rf': 10.0, 'Medium': [['Water', 1]]}
+    medium1 = Medium(medium_vzor1)
+    medium2 = Medium(medium_vzor2)
+    print('SUCCES')
