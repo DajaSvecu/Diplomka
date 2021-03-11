@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(551, 364)
+        MainWindow.resize(551, 551) # 551, 364
         MainWindow.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         MainWindow.setAnimated(True)
         MainWindow.setTabShape(QtWidgets.QTabWidget.Rounded)
@@ -57,6 +57,20 @@ class Ui_MainWindow(object):
         self.verticalLayoutRest = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_3)
         self.verticalLayoutRest.setContentsMargins(0, 0, 0, 0)
         self.verticalLayoutRest.setObjectName("verticalLayoutRest")
+        self.frame_4 = QtWidgets.QFrame(self.centralwidget)
+        self.frame_4.setGeometry(QtCore.QRect(20, 320, 550, 200))
+        self.frame_4.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_4.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_4.setObjectName("frame_4")
+        self.layoutWidget_4 = QtWidgets.QWidget(self.frame_4)
+        self.layoutWidget_4.setGeometry(QtCore.QRect(10, 10, 530, 200))
+        self.layoutWidget_4.setObjectName("layoutWidget_4")
+        self.table = QtWidgets.QTableWidget(self.layoutWidget_4)
+        self.table.setGeometry(QtCore.QRect(0,0,500,190))
+        self.table.setObjectName("table")
+        
+
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 551, 21))

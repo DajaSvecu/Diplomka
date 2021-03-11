@@ -4,15 +4,15 @@ class UserInputMedium:
         self.parameters = [
             {"name": "M",
                 "parse_function": float,
-                "default_value": 0.833,
+                "default_value": 0.2,
                 "unit": "kg/s"},
             {"name": "T1",
                 "parse_function": float,
-                "default_value": 673.15,
+                "default_value": 453.15,
                 "unit": "K"},
             {"name": "T2",
                 "parse_function": float,
-                "default_value": 423.15,
+                "default_value": 0,
                 "unit": "K"},               
             {"name": "P",
                 "parse_function": float,
@@ -31,7 +31,7 @@ class UserInputMedium:
             },
             {
                 "name": 'PERCENT',
-                "default_value": 100,
+                "default_value": 1,
                 "parse_function": float
             }
         ]
@@ -42,7 +42,7 @@ class UserInputShell:
         self.parameters = [
             {"name": "M",
                 "parse_function": float,
-                "default_value": 10,
+                "default_value": 1,
                 "unit": "kg/s"},
             {"name": "T1",
                 "parse_function": float,
@@ -50,7 +50,7 @@ class UserInputShell:
                 "unit": "K"},
             {"name": "T2",
                 "parse_function": float,
-                "default_value": 348.15,
+                "default_value": 0,
                 "unit": "K"},               
             {"name": "P",
                 "parse_function": float,
@@ -69,7 +69,7 @@ class UserInputShell:
             },
             {
                 "name": 'PERCENT',
-                "default_value": 100,
+                "default_value": 1,
                 "parse_function": float
             }
         ]
@@ -79,16 +79,16 @@ class UserInputRest:
         self.name = 'Rest'
         self.parameters = [
             {
+                'name' : 'Q',
+                "default_value": 20000,
+                'parse_function': float,
+                'unit': 'W'
+            },
+            {
                 'name' : 'Uhel',
                 "default_value": 30,
                 'parse_function': float,
                 'unit': 'deg'
-            },
-            {
-                'name' : 'Lambda',
-                "default_value": 47,
-                'parse_function': float,
-                'unit': 'W/m^2K'
             },            
             {
                 'name' : 'MaxDelka',
@@ -113,6 +113,7 @@ class UserInputRest:
 class Sizes:
     def __init__(self):
         self.rho = 7850
+        self.lamb = 50
         self.list_of_tubes = [
             {
                 'd_in' : 0.012,

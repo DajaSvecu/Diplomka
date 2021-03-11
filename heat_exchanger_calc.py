@@ -3,15 +3,24 @@ from heat_exchanger_inputs import Sizes
 import math
 
 class Calculate():
+    """
+    Slouzi k vypoctu bilancni rovnice a vypoctu jednotlivych vymeniku
+
+    """
     def __init__(self, tube:dict, shell:dict, rest:dict):
-        self.tube = Medium(tube) # TODO error handling two_phase state
-        self.shell = Medium(shell) # TODO error handling two_phase state
         self.rest = rest
+        if self.rest['Uhel'] != 30 and self.rest['Uhel'] != 45 and self.rest['Uhel'] != 60 and self.rest['Uhel'] != 90:
+            raise Exception('Byl zadan spatny uhel! Zadej uhel 30, 45, 60 nebo 90.')     
+        if tube['T1'] > shell['T1']:
+            self.tube = Medium(tube, rest['Q'], True) # TODO error handling two_phase state
+            self.shell = Medium(shell, rest['Q'], False) # TODO error handling two_phase state
+        elif tube['T1'] < shell['T1']:
+            self.tube = Medium(tube,rest['Q'], False) # TODO error handling two_phase state
+            self.shell = Medium(shell, rest['Q'], True) # TODO error handling two_phase state
+        else:
+            raise Exception('Nedochazi k vymene tepla z duvodu stejnych pocatecnich teplot! Zadej jine pocatecni teploty.')
         self.sizes = Sizes()
-        if self.tube.q > 0.99 * self.shell.q and self.tube.q < 1.01 * self.shell.q:
-            self.rest['Q'] = 1.08 * (self.tube.q + self.shell.q) / 2
-        #else: TODO error handling wrong power
-    
+        
     def calculate_all(self) -> None:
         heat_exchanger = {}
         vysledky = []
@@ -46,26 +55,10 @@ class Calculate():
                             else:
                                 vysledky.append(heat_exchanger_result)
                                 pocet += 1
-        print(pocet_ass)
-        print(pocet_exc)
-        print(pocet)
-        for i in range(20):
-            print(vysledky[i][0])
-        '''
-        print('TLAKOVA ZTRATA')
-        vysledky.sort(key=lambda a: a[1]['tlak_ztraty'])
-        
-        print('VAHA')
-        vysledky.sort(key=lambda a: a[1]['hmotnost'])
-        for i in range(10):
-            print(vysledky[i][1])
-        print(vysledky[-1])        
-        print('KOMPAKTNOST')
-        vysledky.sort(reverse=True, key=lambda a: a[1]['kompaktnost'])
-        for i in range(10):
-            print(vysledky[i][1])
-
-        '''
+        print('Z duvodu rychlosti v trubce neproslo {} vymeniku'.format(pocet_exc[0]))
+        print('Z duvodu rychlosti v plasti neproslo {} vymeniku'.format(pocet_exc[1]))
+        print('Z duvodu delky neproslo {} vymeniku'.format(pocet_exc[2]))
+        print('Z duvodu tlaku neproslo {} vymeniku'.format(pocet_exc[3]))
         return vysledky
 
     def calculate_heat_exchanger(self, heat_exchanger:dict) -> dict:
@@ -94,10 +87,7 @@ class Calculate():
         # -----------------------TRUBKOVY PROSTOR-----------------------
         b1 = 0.866 if self.rest['Uhel'] == 30 else 1
         n_tr = math.ceil((math.pi * (DS-d_out)**2)/(4*heat_exchanger['t_t']**2*b1)) # ULOZIT PARAMETER
-        A = (d_out * math.pi * n_tr) / (D1 ** 2 / 4) # ULOZIT PARAMETER 
         w_tube = self.tube.prutok / ((math.pi * heat_exchanger['d_in']**2) / 4 * self.tube.rho * n_tr) # ULOZIT PARAMETER 
-        
-        assert (self.tube.phase == 'liquid' or self.tube.phase == 'gas'), ''
         
         if self.tube.phase == 'liquid':
             if w_tube < 0.3 or w_tube > 1:
@@ -132,8 +122,6 @@ class Calculate():
         S_2N = (heat_exchanger['t_p'] - s_p)*D1 # 55 velikost nezaplneneho prostoru mezi prepazkami
         w_shell = self.shell.prutok / (S_2N * self.shell.rho * gamma) # ULOZIT PARAMETER
         
-        assert (self.shell.phase != 'liquid' or self.shell.phase != 'gas'), ''
-                
         if self.shell.phase == 'liquid':
             if w_shell < 0.2 or w_shell > 0.8:
                 raise Exception('Shell')
@@ -179,8 +167,7 @@ class Calculate():
         Nuss_shell = (0.3 +(Nuss_shell_lam**2 + Nuss_shell_turb**2)**0.5)*y2*y3*y4*y5*y6*y7*y8 # realny plati pri stehlik 60
         alpha_shell = Nuss_shell * self.shell.lamb / l_char
         # ----------------------------------------------------------------
-        # TODO pridat zanaseni
-        k = math.pi/(1/(alpha_tube * heat_exchanger['d_in']) + 1/(2*self.rest['Lambda'])*math.log(heat_exchanger['d_in']/d_out) + 1/(alpha_shell * d_out))
+        k = math.pi/(1/(alpha_tube * heat_exchanger['d_in']) + self.tube.zanaseni + 1/(2*self.sizes.lamb)*math.log(heat_exchanger['d_in']/d_out) + 1/(alpha_shell * d_out) + self.shell.zanaseni)
         if self.tube.t1 > self.tube.t2:
             delta_t_ln = ((self.tube.t1 - self.shell.t2) - (self.tube.t2 - self.shell.t1)) / math.log((self.tube.t1 - self.shell.t2) / (self.tube.t2 - self.shell.t1))
         else:
@@ -237,7 +224,6 @@ class Calculate():
         if delta_p > self.rest['MaxZtraty']:
             raise Exception('Pressure')
         
-        # TODO pricit k objemu prepazky
         objem_vymeniku = math.pi*(n_tr*(d_out**2 - heat_exchanger['d_in']**2)+(heat_exchanger['shell']['D2']**2-D1**2))/4*L_max 
         objem_vymeniku += math.pi / 4 * (D1 ** 2 * 0.75 - n_tr * d_out**2) * n_p *s_p
 
@@ -249,7 +235,6 @@ class Calculate():
             'pocet_trubek': n_tr,
             'w_tube': round(w_tube,2),
             'w_shell': round(w_shell,2),
-            'kompaktnost': round(A),
             'tlak_ztraty': round(delta_p),
             'hmotnost': round(objem_vymeniku * self.sizes.rho, 3)
         }
@@ -364,15 +349,15 @@ class Calculate():
         return lamb22
 
 if __name__ == '__main__':
-    trubka = {'M': 15/360, 'T1': 890 + 273.15, 'T2': 60.81 + 273.15, 'P': 100000, 'Rf': 10.0, 'Medium': [['H2O', 0.1],
-    ['O2', 0.07],
-    ['CO2', 0.12],
-    ['Ar', 0.006],
-    ['N2', 0.7]]}
-    plast = {'M': 1.926, 'T1': 25 + 273.15, 'T2': 30 + 273.15, 'P': 400000, 'Rf': 10.0, 'Medium': [['H2O', 1]]}
+    trubka = {'M': 1.24, 'T1': 600 + 273.15, 'P': 107000, 'Rf': 0.01, 'Medium': [['H2O', 0.07789],
+    ['O2', 0.07335],
+    ['CO2', 0.1498],
+    ['Ar', 0.001144],
+    ['N2', 0.6818]]}
+    plast = {'M': 1.291, 'T1': 98.9 + 273.15, 'P': 430600, 'Rf': 0.01, 'Medium': [['Air', 1]]}
     ostatni = {
         'Uhel': 30.0,
-        'Lambda': 50.0,
+        'Q': 653000.0,
         'MaxDelka': 6.0,
         'MaxSirka': 1.2,
         'MaxZtraty': 50000.0,
@@ -381,10 +366,6 @@ if __name__ == '__main__':
 
     vysledky = everything.calculate_all()
     import matplotlib.pyplot as plt
-
-    fig, axs = plt.subplots(1,3)
     for vysledek in vysledky:
-        axs[0].scatter(vysledek[1]['kompaktnost'],vysledek[1]['tlak_ztraty'])
-        axs[1].scatter(vysledek[1]['hmotnost'],vysledek[1]['tlak_ztraty'])
-        axs[2].scatter(vysledek[1]['kompaktnost'],vysledek[1]['hmotnost'])
+        plt.scatter(vysledek[1]['hmotnost'],vysledek[1]['tlak_ztraty'])
     plt.show()
