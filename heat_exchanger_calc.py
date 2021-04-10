@@ -218,7 +218,6 @@ class Calculate():
             delta_t_ln = ((self.shell.t1 - self.tube.t2) - (self.shell.t2 - self.tube.t1)) / math.log((self.shell.t1 - self.tube.t2) / (self.shell.t2 - self.tube.t1))
         
         Power = round(k * delta_t_ln * n_tr * length)
-        print(Power)
         if Power < self.rest['Q'] or Power > 1.15 * self.rest['Q']: raise Exception('Power')
         #L_max = round(self.rest['Q'] / (k * delta_t_ln * n_tr), 3) # ULOZIT PARAMETER
         #if L_max > 15 * D1 or L_max < 3 * D1 or L_max > self.rest['MaxL']: raise Exception('Length') # ERROR
