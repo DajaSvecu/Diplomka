@@ -164,7 +164,7 @@ for D1 in [1.5, 1.4, 1.3, 1.2, 1.1, 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.
                     
                     # -----------------------TRUBKOVY PROSTOR-----------------------
                     w_sp = m_sp / ((math.pi*d_in**2)/4*rho*n_tr) #rychlost spalin CHYBI POCET CHODU 5-10
-                    if w_sp > 15 or w_sp < 8: continue
+                    if w_sp > 30 or w_sp < 8: continue
                     nu_sp = eta / rho # kinematicka viskozita
                     Re_sp = (w_sp*d_in)/nu_sp # Reynolds
                     Pr_sp = eta * cp / lamb # Prandlt
@@ -229,8 +229,8 @@ for D1 in [1.5, 1.4, 1.3, 1.2, 1.1, 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.
                         y4 = 1
 
                     y5 = 1 - x8 + 0.524 * x8**0.32 # 57 0.2 < t_p/D1 < 1; x8 < 0.8
-                    if x8 > 0.8 or t_p/D1 < 0.2 or t_p/D1 > 1:
-                        print('ERROR x8')
+                    #if x8 > 0.8 or t_p/D1 < 0.2 or t_p/D1 > 1:
+                    #    print('ERROR x8')
 
                     y6 = 1 # 58 TODO zjistit dulezitost, spatne by se zjistovalo
                     if Re_w < 100:
@@ -253,25 +253,34 @@ for D1 in [1.5, 1.4, 1.3, 1.2, 1.1, 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.
                     # Pr (0.6; 10**3)
                     alpha_w = Nuss_w * lamb_w / l_char
                     # TODO zapocitani zanaseni
-                    k = math.pi/(1/(alpha_sp * d_in) + 1/(2*lamb_ocel)*math.log(d_in/d_out) + 1/(alpha_w * d_out)) # prostup tepla
+                    #k = math.pi/(1/(alpha_sp * d_in) + 1/(2*lamb_ocel)*math.log(d_in/d_out) + 1/(alpha_w * d_out)) # prostup tepla
                     # TODO korekcni faktor pro vice chodu
                     delta_t_ln = ((t_sp_in-t_w_out)-(t_sp_out-t_w_in))/math.log((t_sp_in-t_w_out)/(t_sp_out-t_w_in)) # teplotni dif
-                    l_max = round(Qv/(k*n_tr*delta_t_ln),3) # delka vymeniku minimalne 3*D1
+                    #l_max = round(Qv/(k*n_tr*delta_t_ln),3) # delka vymeniku minimalne 3*D1
+                    
+                    k = 1/(1/alpha_sp + tl/lamb_ocel + 1/alpha_w) # prostup tepla
+                    k_ref = 1/(1/100 + tl/lamb_ocel + 1/1000) # prostup tepla
+                    S_skut = Qv / (k * delta_t_ln)
+                    S_ref = Qv / (k_ref * delta_t_ln)
+                    OverDesign = (S_skut - S_ref)/S_ref *100 
+                    l_max = S_skut /(n_tr * math.pi * d_out)
+                    
+                    
                     if l_max > 15*D1 or l_max < 3*D1: continue
                     A = l_max * d_in**2 * math.pi /4 * n_tr
                     Qv_1 = l_max*k*n_tr*delta_t_ln
                     n_p = math.floor(l_max/t_p -1) # pocet prepazek
-
+                    
+                    if OverDesign < 20: print(round(OverDesign, 2), w_sp, w_w)
+                    '''
                     parametry = [D1, d_in, tl, t_p, t_t]
                     # TLAKOVE ZTRATY trubkovy prostor 66-67
                     # nezapocitani vstupniho a vystupniho hrdla
                     # Prepazkovy prostor trenim
                     lamb11 = 64 / Re_sp #66 zalezi na Re
                     # TODO turbulentni proudeni
-                    '''
-                    if Re_sp > 2320:
-                        print('ERROR Turbulentni proudeni lamb11')
-                    '''
+                    #if Re_sp > 2320:
+                    #    print('ERROR Turbulentni proudeni lamb11')
                     z_1 =l_max / d_in
                     z_2 = 1 # 67 Re mezni vrstva TODO zjistit dulezitost
                     delta_p_t = lamb11 * rho * w_sp**2 / 2 * z_1 * z_2
@@ -311,15 +320,13 @@ for D1 in [1.5, 1.4, 1.3, 1.2, 1.1, 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.
                     w_wv = m_w/((S_2Z* S_vz)**0.5*rho_w)
                     delta_p_tv = n_p*((2+0.6*n_rv)*rho_w*w_wv**2)/2*z_4w # TODO laminarni proudeni
                     delta_p_w = delta_p_to + delta_p_tn + delta_p_tv
-
+                    '''
                     pocet += 1
                     Pocet += 1
-                    if delta_p_w + delta_p < tlakova_ztrata:
-                        min_ztrata = parametry
-                        tlakova_ztrata = delta_p + delta_p_w
+
+
     print('D1: {} a pocet: {}'.format(D1, pocet))
 print('Celkove: {}'.format(Pocet))
-print(min_ztrata)
 
 
 print(time.time()-cas_startu)

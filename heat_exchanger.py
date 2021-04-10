@@ -20,9 +20,9 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         
-        self.input_tube = UserInputMedium('Tube')
+        self.input_tube = UserInputMedium('Tube', 'Trubkovy prostor')
         #self.input_shell = UserInputMedium('Shell') ve finalni verzi
-        self.input_shell = UserInputShell('Shell') # pouze docasny
+        self.input_shell = UserInputMedium('Shell', 'Mezitrubkovy prostor') # pouze docasny
         self.input_rest = UserInputRest()
         
         self.add_medium_inputs(self.verticalLayoutTube, self.input_tube)
@@ -38,15 +38,19 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         """
         self.add_main_inputs(parent_layout, input)
         title_layout = QHBoxLayout()
-        for text in ['Medium', 'Procenta']:
-            title = QLabel(text)
+        for parameter in input.medium:
+            title = QLabel(parameter['name'])
+            title.setFont(QFont("Times", 12, QFont.Bold))
+            title.setToolTip(parameter['hint'])
             title_layout.addWidget(title)
         parent_layout.addLayout(title_layout)
+
         for i in range(1):
             new_layout = QHBoxLayout()
             for parameter in input.medium:
                 name = input.name + parameter['name'] + str(i)
                 setattr(self, name, QLineEdit())
+                getattr(self, name).setFont(QFont("Times", 12))
                 getattr(self, name).setText(str(parameter['default_value']))
                 #getattr(self, name).setDisabled(True)
                 new_layout.addWidget(getattr(self, name))
@@ -56,8 +60,9 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         """
         Pridani vstupu hlavni vstupu do uzivatelskeho prostredi.
         """
-        title_text = '{}'.format(input.name)
-        title = QLabel(title_text)
+        title = QLabel(input.title)
+        title.setAlignment(Qt.AlignCenter)
+        title.setFont(QFont("Times", 16, QFont.Bold))
         parent_layout.addWidget(title)
         
         for element in input.parameters:
@@ -65,9 +70,12 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
 
             label_text = "{} [{}]:".format(element['name'], element['unit'])
             label = QLabel(label_text)
+            label.setFont(QFont("Times", 12))
+            label.setToolTip(element['hint'])
             name = input.name + element['name']
             setattr(self, name, QLineEdit())
             getattr(self, name).setText(str(element['default_value']))
+            getattr(self, name).setFont(QFont("Times", 12))
             if element['name'] == 'T2': getattr(self, name).setDisabled(True)
             new_layout.addWidget(label)
             new_layout.addWidget(getattr(self, name))
@@ -79,15 +87,24 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         Ziskani vstupu od uzivatele o mediu.
         """
         values = self.get_main_inputs(input)
-        medium = [[0,0] for y in range(1)]
+        medium = []
         for i in range(1):
+            part_medium = [0, 0]
             j = 0
             for element in input.medium:
+
                 name = input.name + element['name'] + str(i)
-                value = getattr(self, name).text()
-                parse_value = element['parse_function'](value)
-                medium[i][j] = parse_value
+                value = getattr(self, name).text().replace(',', '.')
+                if value == '':
+                    break
+                try:
+                    parse_value = element['parse_function'](value) * element['to_SI']
+                except ValueError:
+                    self.show_error_dialog_to_user('Hodnota {} ma spatny format. Pro "medium" zadejte retezec a pro "procenta" cislo!'.format(name))
+                
+                part_medium[j] = parse_value
                 j += 1
+            if value != '': medium.append(part_medium)
         values['Medium'] = medium
         return values
 
@@ -97,10 +114,17 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         """
         values = {}
         for element in input.parameters:
-            name = input.name + element['name']
-            value = getattr(self, name).text()
-            parse_value = element['parse_function'](value)
-            values[element['name']] = parse_value
+            try:
+                name = input.name + element['name']
+                value = getattr(self, name).text().replace(",", ".")
+                parse_value = element['parse_function'](value) * element['to_SI']
+                if parse_value < 0: raise Exception('Hodnota {} je mensi nez nula. Zadejte kladne cislo.'.format(name))
+                values[element['name']] = parse_value
+            except ValueError:
+                self.show_error_dialog_to_user('Nezadali jste cislo u hodnoty {}!'.format(name))
+            except Exception as error:
+                self.show_error_dialog_to_user(error.args[0])
+
         return values
     
     
@@ -120,33 +144,49 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
             calculate = Calculate(medium_tube, medium_shell, rest)
             getattr(self, 'TubeT2').setText(str(round(calculate.tube.t2, 2)))
             getattr(self, 'ShellT2').setText(str(round(calculate.shell.t2, 2)))
-        except ValueError as error:
-            print(error.args)
+            vysledky = calculate.calculate_all()   
         except Exception as error:
-            print(error.args)
-        try:
-            vysledky = calculate.calculate_all()
-            
-        except:
-            pass
+            self.show_error_dialog_to_user(error.args[0])
         else:
             print('Pozadavky na vymenik splnilo {} vymeniku.'.format(len(vysledky)))
             self.show_output(vysledky)
-            print('DONE!')
             for vysledek in vysledky:
                 plt.scatter(vysledek[1]['hmotnost'],vysledek[1]['tlak_ztraty'])
+            plt.title('Graf vymeniku splnujicich pozadavky')
+            plt.xlabel('Hmotnost [kg]')
+            plt.ylabel('Tlakove ztraty [Pa]')
             plt.show()    
+            print('DONE!')
+
+    def show_error_dialog_to_user(self, error_message: str) -> None:
+        """
+        Displays a separate dialog (alert) informing user of something bad, like
+            invalid user input or simulation errors.
+
+        Args:
+            error_message ... what should be shown to the user
+        """
+
+        print(error_message)
+
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Critical)
+        msg.setText("Error")
+        msg.setWindowTitle("Error")
+        msg.setInformativeText(error_message)
+        msg.exec_()
 
     def prepare_table(self):
         """
         Pripraveni sloupcu v tabulce
         """
         i = 0
-        for item in ['DN', 'd_in', 'tl', 't_p', 't_t']:
+        for item in ['DN[-]', 'd_out[m]', 'tloustka steny[m]', 'roztec trub[m]', 'delka[m]', 'roztec prep[m]']:
             self.table.insertColumn(i)
             self.table.setHorizontalHeaderItem(i, QTableWidgetItem(item))
             i += 1
-        for item in ['vyska_prep', 'tl_prep', 'delka','pocet_prepazek', 'pocet_trubek', 'w_tube', 'w_shell', 'tlak_ztraty', 'hmotnost']:
+        for item in ['vyska_prep[m]', 'tl_prep[m]','pocet prepazek[-]', 'pocet trubek[-]', 'TP[m/s]', 'MZP[m/s]', 'Vykon [W]',
+         'tlakove ztraty[Pa]', 'hmotnost[kg]']:
             self.table.insertColumn(i)
             self.table.setHorizontalHeaderItem(i, QTableWidgetItem(item))
             i += 1
