@@ -55,22 +55,24 @@ class Calculate():
                             heat_exchanger['length'] = length
                             for t_p in self.sizes.list_of_baffle_spaces:
                                 heat_exchanger['t_p'] = round(t_p * (heat_exchanger['shell']['D2'] - 2 * heat_exchanger['shell']['wall']), 5)
-                                try:
-                                    heat_exchanger_result = self.calculate_heat_exchanger(heat_exchanger)
-                                except AssertionError:
-                                    pocet_ass += 1
-                                except Exception as error:
-                                    if error.args[0] == 'Tube':
-                                        pocet_exc[0] += 1
-                                    elif error.args[0] == 'Shell':
-                                        pocet_exc[1] += 1
-                                    elif error.args[0] == 'Power':
-                                        pocet_exc[2] += 1
-                                    elif error.args[0] == 'Pressure':
-                                        pocet_exc[3] += 1
-                                else:
-                                    vysledky.append(heat_exchanger_result)
-                                    pocet += 1
+                                for h_p in self.sizes.list_of_baffle_cuts:
+                                    heat_exchanger['h_p'] = round(h_p * (heat_exchanger['shell']['D2'] - 2 * heat_exchanger['shell']['wall']), 5)
+                                    try:
+                                        heat_exchanger_result = self.calculate_heat_exchanger(heat_exchanger, True)
+                                    except AssertionError:
+                                        pocet_ass += 1
+                                    except Exception as error:
+                                        if error.args[0] == 'Tube':
+                                            pocet_exc[0] += 1
+                                        elif error.args[0] == 'Shell':
+                                            pocet_exc[1] += 1
+                                        elif error.args[0] == 'Power':
+                                            pocet_exc[2] += 1
+                                        elif error.args[0] == 'Pressure':
+                                            pocet_exc[3] += 1
+                                    else:
+                                        vysledky.append(heat_exchanger_result)
+                                        pocet += 1
         if pocet == 0:
             raise Exception('''
             Pozadavky nesplnil zadny vymenik tepla.
@@ -82,11 +84,11 @@ class Calculate():
             '''.format(pocet_exc[0], pocet_exc[1], pocet_exc[2], pocet_exc[3]))
         return vysledky
 
-    def calculate_heat_exchanger(self, heat_exchanger:dict) -> dict:
+    def calculate_heat_exchanger(self, heat_exchanger:dict, op: bool) -> dict:
         D1 = heat_exchanger['shell']['D2'] - 2 * heat_exchanger['shell']['wall']
         DS = D1 - (0.012 + 0.005*D1)
         d_in = heat_exchanger['d_out'] - 2 * heat_exchanger['tl']
-        h_p = 0.67 * D1 # ULOZIT PARAMETER
+        h_p = heat_exchanger['h_p'] # ULOZIT PARAMETER
         s_p = self.baffle_thickness(D1, heat_exchanger['t_p']) # ULOZIT PARAMETER
         length = heat_exchanger['length'] - 0.0254 *2
         n_p = math.floor((length-0.3) / heat_exchanger['t_p']) # Ulozit parameter
@@ -110,16 +112,16 @@ class Calculate():
 
         # -----------------------TRUBKOVY PROSTOR-----------------------
         b1 = 0.866 if self.rest['Uhel'] == 30 else 1
-        n_tr = math.floor(0.95*(math.pi * (DS-heat_exchanger['d_out'])**2)/(4*heat_exchanger['t_t']**2*b1)) # ULOZIT PARAMETER
+        n_tr = math.floor((math.pi * (DS-heat_exchanger['d_out'])**2)/(4*heat_exchanger['t_t']**2*b1)) # ULOZIT PARAMETER
         w_tube = self.tube.prutok / ((math.pi * d_in**2) / 4 * self.tube.rho * n_tr) # ULOZIT PARAMETER 
-        
-        if self.tube.phase == 'liquid':
-            if w_tube < 0.5 or w_tube > 2.5:
-                raise Exception('Tube')
+        if op == True:    
+            if self.tube.phase == 'liquid':
+                if w_tube < 0.3 or w_tube > 2.4:
+                    raise Exception('Tube')
 
-        elif self.tube.phase == 'gas':
-            if w_tube < 10 or w_tube > 30:
-                raise Exception('Tube')
+            elif self.tube.phase == 'gas':
+                if w_tube < 10 or w_tube > 30:
+                    raise Exception('Tube')
         
         nu_tube = self.tube.eta / self.tube.rho
         Re_tube = w_tube * d_in / nu_tube
@@ -141,18 +143,17 @@ class Calculate():
             gamma = 1 - math.pi /(4*x6) 
 
         fi_vs_a = 2 * math.acos((2/(DS-heat_exchanger['d_out'])) * (h_p-D1/2)) # 71
-        n_tr_v = round(0.95*(DS - heat_exchanger['d_out'])**2/(8*heat_exchanger['t_t']**2*b1)*(fi_vs_a - math.sin(fi_vs_a))) # 58 
+        n_tr_v = round((DS - heat_exchanger['d_out'])**2/(8*heat_exchanger['t_t']**2*b1)*(fi_vs_a - math.sin(fi_vs_a))) # 58 
 
         S_2N = (heat_exchanger['t_p'] - s_p)*D1 # 55 velikost nezaplneneho prostoru mezi prepazkami
         w_shell = self.shell.prutok / (S_2N * self.shell.rho * gamma) # ULOZIT PARAMETER
-        
-        if self.shell.phase == 'liquid':
-            if w_shell < 0.3 or w_shell > 1.5:
-                raise Exception('Shell')
-        elif self.shell.phase == 'gas':
-            if w_shell < 5 or w_shell > 15:
-                raise Exception('Shell')
-        
+        if op == True:
+            if self.shell.phase == 'liquid':
+                if w_shell < 0.3 or w_shell > 1.5:
+                    raise Exception('Shell')
+            elif self.shell.phase == 'gas':
+                if w_shell < 5 or w_shell > 15:
+                    raise Exception('Shell')
         l_char = math.pi * heat_exchanger['d_out'] / 2
         Re_shell = (w_shell * l_char)/(self.shell.eta / self.shell.rho)
         Pr_shell = self.shell.cp * self.shell.eta / self.shell.lamb
@@ -178,8 +179,8 @@ class Calculate():
             y4 = 1 
 
         x8 = n_tr_v / n_tr # 56
-
-        assert(x8 < 0.8), ''
+        if op == True:
+            assert(x8 < 0.8), ''
         
         y5 = 1 - x8 + 0.524 * x8**0.32 # 57 0.2 < t_p/D1 < 1; x8 < 0.8
         
@@ -202,8 +203,6 @@ class Calculate():
             y7 = math.exp(0-1.35*S_sS/S_2Z) # 59 TODO zanedbani tesnicich list?
       
         a = 0.33 if Re_shell <= 100 else 0.6
-        n_p = 8
-
         l_tn = (length - (n_p - 1)*heat_exchanger['t_p'] - s_p)/2
         y8 = ((n_p - 1)+2*(l_tn/(2*heat_exchanger['t_p']))**(1-a))/((n_p - 1)+(l_tn/(heat_exchanger['t_p'])))
 
@@ -218,11 +217,8 @@ class Calculate():
             delta_t_ln = ((self.shell.t1 - self.tube.t2) - (self.shell.t2 - self.tube.t1)) / math.log((self.shell.t1 - self.tube.t2) / (self.shell.t2 - self.tube.t1))
         
         Power = round(k * delta_t_ln * n_tr * length)
-        print(Power)
-        if Power < self.rest['Q'] or Power > 1.15 * self.rest['Q']: raise Exception('Power')
-        #L_max = round(self.rest['Q'] / (k * delta_t_ln * n_tr), 3) # ULOZIT PARAMETER
-        #if L_max > 15 * D1 or L_max < 3 * D1 or L_max > self.rest['MaxL']: raise Exception('Length') # ERROR
-
+        if op == True:
+            if Power < self.rest['Q'] or Power > 1.1 * self.rest['Q']: raise Exception('Power')
         # KONTROLA
 
         # TLAKOVE ZTRATY V TRUBKOVEM PROSTORU
@@ -269,21 +265,20 @@ class Calculate():
             shell_p_c = n_p *((2 + 0.6 * n_rv)*self.shell.rho*w_2v**2/2)*z4
         shell_delta_p = shell_p_a + shell_p_b + shell_p_c
         delta_p = tube_delta_p + shell_delta_p # ULOZIT PARAMETER
-
-        if delta_p > self.rest['MaxP']:
-            raise Exception('Pressure')
+        if op == True:
+            if delta_p > self.rest['MaxP']:
+                raise Exception('Pressure')
         
         objem_vymeniku = math.pi*(n_tr*(heat_exchanger['d_out']**2 - d_in**2)+(heat_exchanger['shell']['D2']**2-D1**2))/4* length 
-        objem_vymeniku += math.pi / 4 * (D1 ** 2 * 0.75 - n_tr * heat_exchanger['d_out']**2) * n_p *s_p
+        objem_vymeniku += math.pi / 4 * (D1 ** 2 * h_p/D1 - n_tr * heat_exchanger['d_out']**2) * n_p *s_p
         
         result = {
-            'vyska_prep': round(h_p,3),
             'tl_prep': s_p,
             'pocet_prepazek':n_p,
             'pocet_trubek': n_tr,
             'w_tube': round(w_tube,2),
             'w_shell': round(w_shell,2),
-            'Vykon': Power,
+            'vykon': Power,
             'tlak_ztraty': round(delta_p),
             'hmotnost': round(objem_vymeniku * self.sizes.rho, 3)
         }
@@ -408,23 +403,42 @@ if __name__ == '__main__':
         'MaxP': 500000.0,
     }
     everything = Calculate(trubka, plast, ostatni)
-    print(everything.tube.t2)
-    print(everything.shell.t2)
     #vysledky = everything.calculate_all()
-    vysledek = everything.calculate_heat_exchanger({
-        'shell': everything.sizes.list_of_shells[1],
-        'd_out': 0.0127,
-        'tl': 0.001244,
-        'length': 1.3,
-        't_t': 0.019,
-        't_p':0.125
-    })
+    vysledky = []
+    import numpy as np
+    tests = {
+        'h_p': np.arange(0.55, 0.95, 0.05),
+        't_p': np.arange(0.2,0.95,0.05),
+        'tl': np.arange(0.5,3.5,0.5),
+    }
+    #for h_p in np.arange(0.55, 0.925, 0.025):
+    #for t_p in np.arange(0.2,0.95,0.05):
+    #for tl in np.arange(0.5,3.5,0.25):#[0.000889, 0.001244, 0.00165, 0.002108]:
+    #for t_t in np.arange(1.2,2,0.05):
+    for shell in everything.sizes.list_of_shells:
+        vysledek = everything.calculate_heat_exchanger({
+            'shell': everything.sizes.list_of_shells[0],
+            'd_out': 0.0127,
+            'tl': 0.001244,#tl/1000,
+            'length': 1.3,
+            't_t': 0.019,#0.0127*t_t,#
+            't_p':0.202642*0.5,
+            'h_p':0.202642*0.8
+        })
+        vysledky.append(vysledek)
     import matplotlib.pyplot as plt
+    fig, axs = plt.subplots(1,2)
+    for vysledek in vysledky:
+        axs[0].scatter(vysledek[0]['t_t'], vysledek[1]['vykon'])
+        axs[0].set_title('Vykon')
+        axs[1].scatter(vysledek[0]['t_t'], vysledek[1]['tlak_ztraty'])
+        axs[1].set_title('Tlakove ztraty')
+    plt.show()
     
+    '''
     print('VYMENIK')
     print(vysledek[0])
     print(vysledek[1])
-    '''
     for vysledek in vysledky:
         print(vysledek[0]['d_out']* math.pi * vysledek[1]['pocet_trubek'] * vysledek[0]['length'])
 

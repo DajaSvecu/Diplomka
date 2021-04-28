@@ -5,13 +5,13 @@ class UserInputMedium:
         self.parameters = [
             {"name": "M",
                 "parse_function": float,
-                "default_value": 720,
+                "default_value": 36000,
                 "to_SI" : 1/3600,
                 "hint" : "Prutok",
                 "unit": "kg/hod"},
             {"name": "T1",
                 "parse_function": float,
-                "default_value": 453.15,
+                "default_value": 318.15,
                 "to_SI" : 1,
                 "hint" : "Vstupni teplota",
                 "unit": "K"},
@@ -52,42 +52,58 @@ class UserInputMedium:
         ]
 
 class UserInputShell:
-    def __init__(self, name):
+    def __init__(self, name, title):
         self.name = name
+        self.title = title
         self.parameters = [
             {"name": "M",
                 "parse_function": float,
-                "default_value": 1,
+                "default_value": 10692,
+                "to_SI" : 1/3600,
+                "hint" : "Prutok",
                 "unit": "kg/hod"},
             {"name": "T1",
                 "parse_function": float,
-                "default_value": 298.15,
+                "default_value": 383.15,
+                "to_SI" : 1,
+                "hint" : "Vstupni teplota",
                 "unit": "K"},
             {"name": "T2",
                 "parse_function": float,
                 "default_value": 0,
+                "to_SI" : 1,
+                "hint" : "Vystupni teplota",
                 "unit": "K"},               
             {"name": "P",
                 "parse_function": float,
-                "default_value": 400000,
-                "unit": "Pa"},               
+                "default_value": 200,
+                "to_SI" : 1000,
+                "hint" : "Tlak media",
+                "unit": "kPa"},               
             {"name": "Rf",
                 "parse_function": float,
                 "default_value": 0.0001,
+                "to_SI" : 1,
+                "hint" : "Zanaseni",
                 "unit": "K*m^2/W"}
         ]
         self.medium =[
             {
-                "name": 'NAZEV',
+                "name": 'MEDIUM',
                 "default_value": 'H2O',
+                "to_SI" : 1,
+                "hint" : "Chemicka znacka media (H2O, CO2...)",
                 "parse_function": str
             },
             {
-                "name": 'PERCENT',
-                "default_value": 1,
+                "name": 'PROCENTA',
+                "default_value": 100,
+                "to_SI" : 0.01,
+                "hint" : "Procentualni zastoupeni",
                 "parse_function": float
             }
         ]
+
 
 class UserInputRest:
     def __init__(self):
@@ -96,7 +112,7 @@ class UserInputRest:
         self.parameters = [
             {
                 'name' : 'Q',
-                "default_value": 20,
+                "default_value": 500,
                 "to_SI" : 1000,
                 "hint" : "Vykon vymeniku",
                 'parse_function': float,
@@ -112,7 +128,7 @@ class UserInputRest:
             },            
             {
                 'name' : 'MaxL',
-                "default_value": 5,
+                "default_value": 7,
                 "to_SI" : 1,
                 "hint" : "Maximalni delka vymeniku",
                 'parse_function': float,
@@ -308,4 +324,6 @@ class Sizes:
 
         self.list_of_pitches = {1.25, 1.33, 1.5}
         
-        self.list_of_baffle_spaces = {0.3, 0.6, 0.9}
+        self.list_of_baffle_spaces = {0.3, 0.5, 0.7}
+        
+        self.list_of_baffle_cuts = {0.8}

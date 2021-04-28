@@ -21,8 +21,8 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         
         self.input_tube = UserInputMedium('Tube', 'Trubkovy prostor')
-        #self.input_shell = UserInputMedium('Shell') ve finalni verzi
-        self.input_shell = UserInputMedium('Shell', 'Mezitrubkovy prostor') # pouze docasny
+        self.input_shell = UserInputShell('Shell', 'Mezitrubkovy prostor') # pouze docasny na testovani
+        #self.input_shell = UserInputMedium('Shell', 'Mezitrubkovy prostor') #ve finalni verzi
         self.input_rest = UserInputRest()
         
         self.add_medium_inputs(self.verticalLayoutTube, self.input_tube)
@@ -127,7 +127,6 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
 
         return values
     
-    
     def run_simulation(self):
         """
         Spusteni po stisknuti tlacitka
@@ -152,7 +151,7 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
             self.show_output(vysledky)
             for vysledek in vysledky:
                 plt.scatter(vysledek[1]['hmotnost'],vysledek[1]['tlak_ztraty'])
-            plt.title('Graf vymeniku splnujicich pozadavky')
+            plt.title('Graf doporucenych vymeniku')
             plt.xlabel('Hmotnost [kg]')
             plt.ylabel('Tlakove ztraty [Pa]')
             plt.show()    
@@ -181,16 +180,15 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         Pripraveni sloupcu v tabulce
         """
         i = 0
-        for item in ['DN[-]', 'd_out[m]', 'tloustka steny[m]', 'roztec trub[m]', 'delka[m]', 'roztec prep[m]']:
+        for item in ['DN[-]', 'd_out[mm]', 'tl_trub[mm]', 'roztec_trub[mm]', 'delka[mm]', 'roztec_prep[mm]', 'vyska_prep[mm]']:
             self.table.insertColumn(i)
             self.table.setHorizontalHeaderItem(i, QTableWidgetItem(item))
             i += 1
-        for item in ['vyska_prep[m]', 'tl_prep[m]','pocet prepazek[-]', 'pocet trubek[-]', 'TP[m/s]', 'MZP[m/s]', 'Vykon [W]',
-         'tlakove ztraty[Pa]', 'hmotnost[kg]']:
+        for item in ['tl_prep[mm]','pocet_prep[-]', 'pocet_trub[-]', 'TP[m/s]', 'MZP[m/s]', 'vykon [W]',
+        'tlak_ztraty[Pa]', 'hmotnost[kg]']:
             self.table.insertColumn(i)
             self.table.setHorizontalHeaderItem(i, QTableWidgetItem(item))
             i += 1
-        
 
     def show_output(self, outputs):
         """
@@ -201,16 +199,24 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         for output in outputs:
             self.table.insertRow(i)
             j = 0
-            for part_output in output:
-                for x in part_output:
-                    item = QTableWidgetItem()
-                    if x == 'shell':
-                        item.setData(0, part_output[x]['DN'])
-                    else:
-                        item.setData(0, part_output[x])
-                    item.setFlags(Qt.ItemFlags(1))
-                    self.table.setItem(i, j, item)
-                    j += 1
+            for x in output[0]:
+                item = QTableWidgetItem()
+                if x == 'shell':
+                    item.setData(0, output[0][x]['DN'])
+                else:
+                    item.setData(0, output[0][x]*1000)
+                item.setFlags(Qt.ItemFlags(1))
+                self.table.setItem(i, j, item)
+                j += 1
+            for y in output[1]:
+                item = QTableWidgetItem()
+                if y == 'tl_prep':
+                    item.setData(0, output[1][y]*1000)
+                else:
+                    item.setData(0, output[1][y])
+                item.setFlags(Qt.ItemFlags(1))
+                self.table.setItem(i, j, item)
+                j += 1
             i += 1
 
 
