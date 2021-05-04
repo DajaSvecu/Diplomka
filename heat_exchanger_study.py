@@ -73,7 +73,7 @@ class Calculate_param_study():
             'd_out': 0.0127,
             'tl': tl*0.0127,
             'length': 1.2192,
-            't_t': 0.019, # MEGA ZAJIMAVE, PRI MALE ROZTECI NEMA TLOUSTKA TEMER VLIV, PRI VETSI ZACINA KLESAT
+            't_t': 0.019, 
             't_p':0.202642*0.5,
             'h_p':0.202642*0.8
             }, False)

@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (QFileDialog, QHBoxLayout, QVBoxLayout, QCheckBox,  
     QLabel, QLineEdit, QPushButton, QGroupBox, QRadioButton, QComboBox, QMessageBox,
     QFormLayout, QDialogButtonBox, QApplication, QDialog, QMainWindow, QTableWidgetItem)
 from PyQt5.QtCore import Qt
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
 from heat_exchanger_ui import Ui_MainWindow
@@ -149,12 +150,7 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         else:
             print('Pozadavky na vymenik splnilo {} vymeniku.'.format(len(vysledky)))
             self.show_output(vysledky)
-            for vysledek in vysledky:
-                plt.scatter(vysledek[1]['hmotnost'],vysledek[1]['tlak_ztraty'])
-            plt.title('Graf doporucenych vymeniku')
-            plt.xlabel('Hmotnost [kg]')
-            plt.ylabel('Tlakove ztraty [Pa]')
-            plt.show()    
+            self.show_graph(vysledky)
             print('DONE!')
 
     def show_error_dialog_to_user(self, error_message: str) -> None:
@@ -219,6 +215,41 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
                 j += 1
             i += 1
 
+    def show_graph(self, outputs):
+        graph_inputs = {
+            'x' : [],
+            'y' : [],
+            's' : [],
+            'c' : [],
+        }
+        for output in outputs:
+            graph_inputs['x'].append(output[1]['hmotnost'])
+            graph_inputs['y'].append(output[1]['tlak_ztraty'])
+            graph_inputs['s'].append(output[0]['length']*10)
+            if output[0]['tl'] == 0.000889:
+                graph_inputs['c'].append('gold')
+            elif output[0]['tl'] == 0.001244:
+                graph_inputs['c'].append('orange')
+            elif output[0]['tl'] == 0.00165:
+                graph_inputs['c'].append('red')
+            elif output[0]['tl'] == 0.002108:
+                graph_inputs['c'].append('green')
+            elif output[0]['tl'] == 0.00277:
+                graph_inputs['c'].append('blue')
+        fig, ax = plt.subplots()
+
+        scatter = ax.scatter(graph_inputs['x'], graph_inputs['y'],c=graph_inputs['c'])
+        pop_a = mpatches.Patch(color='gold', label='0.889')
+        pop_b = mpatches.Patch(color='orange', label='1.244')
+        pop_c = mpatches.Patch(color='red', label='1.65')
+        pop_d = mpatches.Patch(color='green', label='2.108')
+        pop_e = mpatches.Patch(color='blue', label='2.77')
+        plt.legend(handles=[pop_a,pop_b,pop_c,pop_d,pop_e], title='Tloustka steny')
+        ax.set_title('Graf doporucenych vymeniku')
+        ax.set_xlabel('Hmotnost [kg]')
+        ax.set_ylabel('Tlakove ztraty [Pa]')
+        plt.grid()
+        plt.show()
 
             
         
