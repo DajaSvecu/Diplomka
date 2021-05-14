@@ -244,16 +244,13 @@ class HeatExchangerWindow(QMainWindow, Ui_MainWindow):
         pop_c = mpatches.Patch(color='red', label='1.65')
         pop_d = mpatches.Patch(color='green', label='2.108')
         pop_e = mpatches.Patch(color='blue', label='2.77')
-        plt.legend(handles=[pop_a,pop_b,pop_c,pop_d,pop_e], title='Tloustka steny')
+        plt.legend(handles=[pop_a, pop_b, pop_c, pop_d, pop_e], title='Tloustka steny')
         ax.set_title('Graf doporucenych vymeniku')
         ax.set_xlabel('Hmotnost [kg]')
         ax.set_ylabel('Tlakove ztraty [Pa]')
         plt.grid()
         plt.show()
-
-            
-        
-
+      
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     heat_exchanger = HeatExchangerWindow()
